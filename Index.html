@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generar y Guardar PDF</title>
+    <title>Generar y Compartir PDF</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
 </head>
 <body>
-    <h1>Generar y Guardar PDF</h1>
-    <p>Sube una imagen y genera un PDF que puedes guardar o descargar.</p>
+    <h1>Generar y Compartir PDF</h1>
+    <p>Sube una imagen para convertirla a PDF y elige cómo compartirla.</p>
 
     <!-- Campo para subir la imagen -->
     <input type="file" id="imageInput" accept="image/*">
@@ -22,15 +22,19 @@
     <button id="generatePdfButton" disabled>Generar PDF</button>
     <br><br>
     
-    <!-- Botón para descargar el PDF -->
-    <button id="downloadPdfButton" style="display: none;">Descargar PDF</button>
+    <!-- Botón para abrir el PDF -->
+    <button id="openPdfButton" style="display: none;">Abrir PDF</button>
+    
+    <!-- Botón para compartir el PDF -->
+    <button id="sharePdfButton" style="display: none;">Compartir PDF</button>
 
     <script>
         const imageInput = document.getElementById('imageInput');
         const canvas = document.getElementById('imageCanvas');
         const ctx = canvas.getContext('2d');
         const generatePdfButton = document.getElementById('generatePdfButton');
-        const downloadPdfButton = document.getElementById('downloadPdfButton');
+        const openPdfButton = document.getElementById('openPdfButton');
+        const sharePdfButton = document.getElementById('sharePdfButton');
         let pdfBlobUrl = null;
 
         imageInput.addEventListener('change', function(event) {
@@ -66,14 +70,29 @@
             const pdfBlob = pdf.output('blob');
             pdfBlobUrl = URL.createObjectURL(pdfBlob);
 
-            // Mostrar el botón de descarga
-            downloadPdfButton.style.display = 'block';
-            downloadPdfButton.onclick = function() {
-                const link = document.createElement('a');
-                link.href = pdfBlobUrl;
-                link.download = 'imagen.pdf'; // Nombre del archivo
-                link.click();
+            // Mostrar botones de abrir y compartir
+            openPdfButton.style.display = 'block';
+            openPdfButton.onclick = function() {
+                window.open(pdfBlobUrl, '_blank');
             };
+
+            if (navigator.share) {
+                sharePdfButton.style.display = 'block';
+                sharePdfButton.onclick = async function() {
+                    try {
+                        const file = new File([pdfBlob], 'imagen.pdf', { type: 'application/pdf' });
+                        await navigator.share({
+                            files: [file],
+                            title: 'PDF Generado',
+                            text: 'Aquí está el PDF generado.',
+                        });
+                    } catch (error) {
+                        alert('Error al compartir: ' + error);
+                    }
+                };
+            } else {
+                sharePdfButton.style.display = 'none'; // Oculta si no hay soporte
+            }
         });
     </script>
 </body>
