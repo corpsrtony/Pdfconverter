@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar y Guardar PDF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <h1>Generar y Guardar PDF</h1>
+    <p>Sube una imagen y genera un PDF que puedes guardar o descargar.</p>
+
+    <!-- Campo para subir la imagen -->
+    <input type="file" id="imageInput" accept="image/*">
+    <br><br>
+    
+    <!-- Vista previa de la imagen -->
+    <canvas id="imageCanvas" style="border:1px solid black; max-width: 100%;"></canvas>
+    <br><br>
+    
+    <!-- Botón para generar el PDF -->
+    <button id="generatePdfButton" disabled>Generar PDF</button>
+    <br><br>
+    
+    <!-- Botón para descargar el PDF -->
+    <button id="downloadPdfButton" style="display: none;">Descargar PDF</button>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        const generatePdfButton = document.getElementById('generatePdfButton');
+        const downloadPdfButton = document.getElementById('downloadPdfButton');
+        let pdfBlobUrl = null;
+
+        imageInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        // Ajustar el tamaño del canvas según la imagen
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        generatePdfButton.disabled = false;
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        generatePdfButton.addEventListener('click', function() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            const imgData = canvas.toDataURL('image/jpeg'); // Convertir canvas a imagen
+            const imgWidth = 210; // Ancho A4 en mm
+            const imgHeight = (canvas.height * imgWidth) / canvas.width; // Escalar altura proporcionalmente
+
+            // Agregar imagen al PDF
+            pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+
+            // Crear URL para el caché del PDF
+            const pdfBlob = pdf.output('blob');
+            pdfBlobUrl = URL.createObjectURL(pdfBlob);
+
+            // Mostrar el botón de descarga
+            downloadPdfButton.style.display = 'block';
+            downloadPdfButton.onclick = function() {
+                const link = document.createElement('a');
+                link.href = pdfBlobUrl;
+                link.download = 'imagen.pdf'; // Nombre del archivo
+                link.click();
+            };
+        });
+    </script>
+</body>
+</html>
