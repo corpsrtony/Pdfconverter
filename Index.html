@@ -3,51 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generar y Compartir PDF</title>
+    <title>Generar PDF Personalizado</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        canvas {
+            border: 1px solid black;
+            max-width: 100%;
+            margin-top: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        input {
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Generar y Compartir PDF</h1>
-    <p>Sube una imagen para convertirla a PDF y elige cómo compartirla.</p>
+    <h1>Generar PDF desde una Imagen</h1>
+    <p>Sube una imagen para convertirla en PDF y descargarla automáticamente.</p>
 
     <!-- Campo para subir la imagen -->
     <input type="file" id="imageInput" accept="image/*">
     <br><br>
-    
+
     <!-- Vista previa de la imagen -->
-    <canvas id="imageCanvas" style="border:1px solid black; max-width: 100%;"></canvas>
+    <canvas id="imageCanvas" style="display: none;"></canvas>
     <br><br>
-    
+
     <!-- Botón para generar el PDF -->
-    <button id="generatePdfButton" disabled>Generar PDF</button>
-    <br><br>
-    
-    <!-- Botón para abrir el PDF -->
-    <button id="openPdfButton" style="display: none;">Abrir PDF</button>
-    
-    <!-- Botón para compartir el PDF -->
-    <button id="sharePdfButton" style="display: none;">Compartir PDF</button>
+    <button id="generatePdfButton" disabled>Generar y Descargar PDF</button>
 
     <script>
         const imageInput = document.getElementById('imageInput');
         const canvas = document.getElementById('imageCanvas');
         const ctx = canvas.getContext('2d');
         const generatePdfButton = document.getElementById('generatePdfButton');
-        const openPdfButton = document.getElementById('openPdfButton');
-        const sharePdfButton = document.getElementById('sharePdfButton');
-        let pdfBlobUrl = null;
 
         imageInput.addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (file) {
+                // Verificar que el archivo es una imagen
+                const validFormats = ['image/jpeg', 'image/png', 'image/gif'];
+                if (!validFormats.includes(file.type)) {
+                    alert('Solo se permiten archivos de imágenes (.jpg, .jpeg, .png, .gif)');
+                    imageInput.value = ''; // Limpiar el input
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const img = new Image();
                     img.onload = function() {
-                        // Ajustar el tamaño del canvas según la imagen
+                        // Mostrar el canvas y ajustar su tamaño
+                        canvas.style.display = 'block';
                         canvas.width = img.width;
                         canvas.height = img.height;
                         ctx.drawImage(img, 0, 0);
+
+                        // Habilitar el botón de generar PDF
                         generatePdfButton.disabled = false;
                     };
                     img.src = e.target.result;
@@ -66,33 +97,11 @@
             // Agregar imagen al PDF
             pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
 
-            // Crear URL para el caché del PDF
-            const pdfBlob = pdf.output('blob');
-            pdfBlobUrl = URL.createObjectURL(pdfBlob);
-
-            // Mostrar botones de abrir y compartir
-            openPdfButton.style.display = 'block';
-            openPdfButton.onclick = function() {
-                window.open(pdfBlobUrl, '_blank');
-            };
-
-            if (navigator.share) {
-                sharePdfButton.style.display = 'block';
-                sharePdfButton.onclick = async function() {
-                    try {
-                        const file = new File([pdfBlob], 'imagen.pdf', { type: 'application/pdf' });
-                        await navigator.share({
-                            files: [file],
-                            title: 'PDF Generado',
-                            text: 'Aquí está el PDF generado.',
-                        });
-                    } catch (error) {
-                        alert('Error al compartir: ' + error);
-                    }
-                };
-            } else {
-                sharePdfButton.style.display = 'none'; // Oculta si no hay soporte
-            }
+            // Descargar el PDF automáticamente
+            pdf.save('imagen.pdf');
+            
+            // Eliminar botón de generar PDF después de su uso
+            generatePdfButton.style.display = 'none';
         });
     </script>
 </body>
